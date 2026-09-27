@@ -1,3 +1,4 @@
+import type { DrillId } from '../storage/store'
 import type { ConsonantClass, FinalSound, Liveness, LowKind, Tone, ToneMark, VowelLength } from '../data/types'
 
 export const CLASS_FI: Record<ConsonantClass, string> = { mid: 'keski', high: 'korkea', low: 'matala' }
@@ -31,6 +32,14 @@ export const FINAL_LABEL: Record<FinalSound, string> = {
   m: '-m',
   y: '-i (y)',
   w: '-o (w)',
+}
+
+export const DRILL_FI: Record<DrillId | 'mix', string> = {
+  class: 'Kirjain → luokka',
+  initial: 'Kirjain → alkuäänne',
+  final: 'Kirjain → loppuäänne',
+  sound: 'Äänne → kirjaimet',
+  mix: 'Sekoitus',
 }
 
 export const initialLabel = (sound: string): string => (sound === '' ? 'äänetön' : sound)
