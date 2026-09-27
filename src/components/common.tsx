@@ -31,6 +31,15 @@ export function ThaiText({ text, hideClass = false, className = '' }: { text: st
   )
 }
 
+/** Mixed Finnish + Thai text: the Thai runs get class colours, the rest stays as is. */
+export function RichText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/([฀-๿◌]+)/).map((part, i) => (i % 2 ? <ThaiText key={i} text={part} /> : part))}
+    </>
+  )
+}
+
 /** Keeps each consonant together with the combining marks written on it. */
 function splitClusters(text: string): string[] {
   const parts: string[] = []

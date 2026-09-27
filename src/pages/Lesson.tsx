@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { BackLink, ClassTag, Letter, ThaiText } from '../components/common'
+import { BackLink, ClassTag, Letter, RichText, ThaiText } from '../components/common'
 import { FAMILY_SLUG } from '../useFamily'
 import { LetterCard } from '../components/LetterCard'
 import { VowelCard, VowelFormText } from '../components/VowelCard'
@@ -72,14 +72,16 @@ function IntroCard({ intro, tag }: { intro: ClassIntro; tag?: ReactNode }) {
   return (
     <div className="card stack">
       <h2>
-        {tag} {intro.heading}
+        {tag} <RichText text={intro.heading} />
       </h2>
       {intro.paragraphs.map((p) => (
-        <p key={p}>{p}</p>
+        <p key={p}>
+          <RichText text={p} />
+        </p>
       ))}
       {intro.classLine && (
         <p>
-          {intro.classLine} {tag}
+          <RichText text={intro.classLine} /> {tag}
         </p>
       )}
     </div>
@@ -158,8 +160,10 @@ function LiveDeadLesson({ lesson }: { lesson: AnyLesson }) {
   )
   const pages = [
     <div key="why" className="card stack">
-      <h2>Elävä ja kuollut tavu · คำเป็น คำตาย</h2>
-      <p>Tavun sävy ratkeaa kolmesta asiasta: alkukonsonantin luokka, sävymerkki – ja onko tavu elävä vai kuollut.</p>
+      <h2>
+        <RichText text="Elävä ja kuollut tavu · คำเป็น คำตาย" />
+      </h2>
+      <p>Tavun tooni (sävelkulku: keski, matala, laskeva, korkea tai nouseva) ratkeaa kolmesta asiasta: alkukonsonantin luokka, toonimerkki – ja onko tavu elävä vai kuollut.</p>
       <p>Elävä tavu loppuu ääneen, jota voi venyttää. Kuollut tavu loppuu lyhyeen vokaaliin tai katkeaa k-, t- tai p-ääneen.</p>
       <div className="rule live">
         <b>Elävä</b>
@@ -189,7 +193,7 @@ function LiveDeadLesson({ lesson }: { lesson: AnyLesson }) {
         o-ääneen – siksi tavu on elävä.
       </p>
       {examples(['ดำ', 'ใจ', 'เอา'])}
-      <p className="small muted">Sävymerkki (่ ้ ๊ ๋) ei vaikuta siihen, onko tavu elävä vai kuollut.</p>
+      <p className="small muted">Toonimerkki (่ ้ ๊ ๋) ei vaikuta siihen, onko tavu elävä vai kuollut.</p>
     </div>,
     <div key="finals" className="card stack">
       <h2>Loppukonsonanttien kahdeksan ryhmää</h2>

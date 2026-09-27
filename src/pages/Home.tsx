@@ -54,7 +54,7 @@ export function Home() {
       {done.length === 0 ? (
         <div className="card stack">
           <h2>Tervetuloa!</h2>
-          <p>Tämä sovellus tekee konsonanttien luokista ja sävysäännöistä automaattisia – nopealla toistolla ja välittömällä palautteella.</p>
+          <p>Tämä sovellus tekee konsonanttien luokista ja toonisäännöistä automaattisia – nopealla toistolla ja välittömällä palautteella.</p>
           <p>Jokainen konsonantti näkyy aina luokkansa värillä ja merkillä:</p>
           <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
             <ClassTag cls="mid" />
@@ -124,7 +124,7 @@ export function Home() {
           {!next && (
             <div className="card stack">
               <h2>Kaikki oppitunnit käyty 🎉</h2>
-              <p className="muted small">Seuraavaksi: sävyjen päättely (vaihe 3, tulossa).</p>
+              <p className="muted small">Seuraavaksi: toonien päättely (vaihe 3, tulossa).</p>
             </div>
           )}
         </>

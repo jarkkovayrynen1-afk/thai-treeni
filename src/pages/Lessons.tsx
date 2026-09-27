@@ -88,7 +88,7 @@ export function Lessons() {
 
       {family === 'syllable' && (
         <>
-          <p className="muted small">Jokainen tavu on joko elävä tai kuollut. Se on sävysääntöjen toinen pala – luokan jälkeen.</p>
+          <p className="muted small">Jokainen tavu on joko elävä tai kuollut. Se on toonisääntöjen toinen pala – luokan jälkeen.</p>
           <section className="stack">
             <LessonRow lesson={lessonById(LIVE_DEAD_LESSON.id)} />
           </section>

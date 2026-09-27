@@ -461,7 +461,7 @@ export function LiveDeadExplanation({ thai }: { thai: string }) {
         {why}
         {verdict}
       </span>
-      {w.mark && <span className="small muted">Sävymerkki ei vaikuta siihen, onko tavu elävä vai kuollut.</span>}
+      {w.mark && <span className="small muted">Toonimerkki ei vaikuta siihen, onko tavu elävä vai kuollut.</span>}
     </span>
   )
 }

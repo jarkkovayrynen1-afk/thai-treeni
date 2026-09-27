@@ -14,7 +14,7 @@ export default defineConfig({
       manifest: {
         name: 'Thai-treeni',
         short_name: 'Thai-treeni',
-        description: 'Thain aakkoset ja sävysäännöt nopealla toistolla.',
+        description: 'Thain aakkoset ja toonisäännöt nopealla toistolla.',
         lang: 'fi',
         start_url: './',
         scope: './',

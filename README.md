@@ -1,6 +1,6 @@
 # Thai-treeni
 
-Henkilökohtainen harjoitussovellus Thain konsonanttiluokkien ja sävysääntöjen automatisointiin.
+Henkilökohtainen harjoitussovellus Thain konsonanttiluokkien ja toonisääntöjen automatisointiin.
 Staattinen PWA (Vite + React + TypeScript), ei palvelinta – edistyminen tallentuu selaimeen.
 
 ## Kehitys
@@ -8,7 +8,7 @@ Staattinen PWA (Vite + React + TypeScript), ei palvelinta – edistyminen tallen
 ```bash
 npm install
 npm run dev      # kehityspalvelin
-npm test         # sävymoottorin ja datan testit
+npm test         # toonimoottorin ja datan testit
 npm run build    # tuotantoversio kansioon dist/
 ```
 
@@ -18,8 +18,8 @@ Jokainen push `main`-haaraan ajaa testit ja julkaisee sovelluksen GitHub Pagesii
 ## Rakenne
 
 - `src/data/` – konsonantit, vokaalit, sanalista, oppitunnit
-- `src/engine/` – sävysäännöt (`tone.ts`), oikeinkirjoituksen jäsennin (`spelling.ts`),
+- `src/engine/` – toonisäännöt (`tone.ts`), oikeinkirjoituksen jäsennin (`spelling.ts`),
   Paiboon-romanisoinnin jäsennin (`paiboon.ts`), kertausalgoritmi (`srs.ts`)
 - `tests/` – jokainen sanalistan sana tarkistetaan kolmella tavalla: kirjoitusasu,
-  romanisointi ja sävymoottori
+  romanisointi ja toonimoottori
 - Romanisointi: Paiboon. Fontti: Sarabun (SIL OFL 1.1).

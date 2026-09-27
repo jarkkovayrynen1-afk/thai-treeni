@@ -46,7 +46,8 @@ export const INTROS: Record<string, ClassIntro> = {
   'mid-1': {
     heading: 'Keskiluokka · อักษรกลาง',
     paragraphs: [
-      'Thain 44 konsonanttia jakautuvat kolmeen luokkaan. Luokka ratkaisee yhdessä sävymerkin ja tavun tyypin kanssa, millä sävyllä tavu lausutaan.',
+      'Thai on tonaalinen kieli: jokainen tavu lausutaan yhdellä viidestä sävelkulusta eli toonista, ja tooni muuttaa merkityksen. มา maa = tulla, ม้า máa = hevonen, หมา mǎa = koira.',
+      'Thain 44 konsonanttia jakautuvat kolmeen luokkaan. Luokka ratkaisee yhdessä toonimerkin ja tavun tyypin kanssa, millä toonilla tavu lausutaan.',
       'Keskiluokassa on vain 9 kirjainta, joten se opetellaan ensin. Muistisäännön jokainen sana alkaa keskiluokan kirjaimella.',
     ],
     classLine: 'Keskiluokka näkyy sovelluksessa aina tällä värillä ja merkillä:',
@@ -71,7 +72,7 @@ export const INTROS: Record<string, ClassIntro> = {
     heading: 'Matala luokka: yksinäiset · อักษรเดี่ยว',
     paragraphs: [
       'Yksinäisillä (10 kpl: ง ญ ณ น ม ย ร ล ว ฬ) ei ole korkean luokan kaksosta.',
-      'Siksi kahdeksan niistä (ง ญ น ม ย ร ล ว) voi saada eteensä äänettömän ห:n, joka ”lainaa” tavulle korkean luokan: หมา luetaan mǎa. Tätä kutsutaan nimellä ห นำ, ja se tulee vastaan sävyharjoituksissa.',
+      'Siksi kahdeksan niistä (ง ญ น ม ย ร ล ว) voi saada eteensä äänettömän ห:n, joka ”lainaa” tavulle korkean luokan: หมา luetaan mǎa. Tätä kutsutaan nimellä ห นำ, ja se tulee vastaan tooniharjoituksissa.',
     ],
   },
 }
@@ -133,7 +134,7 @@ export const VOWEL_LESSONS: VowelLesson[] = [
       heading: 'Vokaalit · สระ',
       paragraphs: [
         'Vokaali kirjoitetaan konsonantin ympärille: eteen, taakse, yläpuolelle tai alle. Merkki ◌ näyttää, mihin konsonantti tulee – esimerkiksi ◌า + ม = มา.',
-        'Lähes jokaisella vokaalilla on lyhyt ja pitkä pari. Pituus kuuluu ääntämisessä ja vaikuttaa myöhemmin sävyyn, joten parit opetellaan yhdessä.',
+        'Lähes jokaisella vokaalilla on lyhyt ja pitkä pari. Pituus kuuluu ääntämisessä ja vaikuttaa myöhemmin tooniin, joten parit opetellaan yhdessä.',
         'Romanisoinnissa pitkä vokaali kirjoitetaan kahdesti: a on lyhyt, aa pitkä.',
       ],
     },

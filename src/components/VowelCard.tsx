@@ -1,7 +1,7 @@
 import { VOWEL_BY_ID, speakableVowel, vowelForm, type VowelForm } from '../data/vowels'
 import { LEN_FI } from '../i18n/fi'
 import { wordOf } from '../drills/questions'
-import { SpeakButton, ThaiText } from './common'
+import { RichText, SpeakButton, ThaiText } from './common'
 
 /** A vowel shape with ◌ marking the consonant slot. */
 export function VowelFormText({ id, className = '' }: { id: string; className?: string }) {
@@ -55,7 +55,11 @@ export function VowelCard({ id }: { id: string }) {
           Sama äänne kuin <VowelFormText id={v.id} />, mutta tällä muodolla, kun perään tulee loppukonsonantti.
         </p>
       )}
-      {v.note && <p className="small muted">{v.note}</p>}
+      {v.note && (
+        <p className="small muted">
+          <RichText text={v.note} />
+        </p>
+      )}
       <div className="facts">
         <div className="fact">
           <div className="k">Pituus</div>
