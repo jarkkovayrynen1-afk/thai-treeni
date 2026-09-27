@@ -1,32 +1,25 @@
-# React + TypeScript + Vite
+# Thai-treeni
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Henkilökohtainen harjoitussovellus Thain konsonanttiluokkien ja sävysääntöjen automatisointiin.
+Staattinen PWA (Vite + React + TypeScript), ei palvelinta – edistyminen tallentuu selaimeen.
 
-Currently, two official plugins are available:
+## Kehitys
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # kehityspalvelin
+npm test         # sävymoottorin ja datan testit
+npm run build    # tuotantoversio kansioon dist/
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Jokainen push `main`-haaraan ajaa testit ja julkaisee sovelluksen GitHub Pagesiin
+(`.github/workflows/deploy.yml`). Jos testit epäonnistuvat, mitään ei julkaista.
+
+## Rakenne
+
+- `src/data/` – konsonantit, vokaalit, sanalista, oppitunnit
+- `src/engine/` – sävysäännöt (`tone.ts`), oikeinkirjoituksen jäsennin (`spelling.ts`),
+  Paiboon-romanisoinnin jäsennin (`paiboon.ts`), kertausalgoritmi (`srs.ts`)
+- `tests/` – jokainen sanalistan sana tarkistetaan kolmella tavalla: kirjoitusasu,
+  romanisointi ja sävymoottori
+- Romanisointi: Paiboon. Fontti: Sarabun (SIL OFL 1.1).
