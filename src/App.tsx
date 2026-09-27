@@ -9,9 +9,11 @@ import { Practice } from './pages/Practice'
 import { Settings } from './pages/Settings'
 import { Stats } from './pages/Stats'
 import { useRoute } from './router'
-import type { DrillId } from './storage/store'
+import { DRILL_FI } from './i18n/fi'
+import type { DrillParam } from './storage/store'
 
-const DRILL_IDS = ['class', 'initial', 'final', 'sound', 'mix']
+/** Every drill has a label, so the label table doubles as the list of valid drills. */
+const isDrill = (d: string): d is DrillParam => d in DRILL_FI
 
 export default function App() {
   const { path, query } = useRoute()
@@ -26,7 +28,7 @@ export default function App() {
     return (
       <Drill
         key={query.toString()}
-        drill={(DRILL_IDS.includes(drill) ? drill : 'mix') as DrillId | 'mix'}
+        drill={isDrill(drill) ? drill : 'mix'}
         mode={query.get('mode') === 'fast' ? 'fast' : 'calm'}
         poolSpec={query.get('pool')}
       />

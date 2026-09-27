@@ -1,20 +1,42 @@
-import { ClassTag, Letter } from '../components/common'
+import { ClassTag } from '../components/common'
+import { LessonItems } from '../components/LessonItems'
 import { CONSONANTS } from '../data/consonants'
-import { LESSONS } from '../data/lessons'
-import { learnedLetters, lessonMastered, lettersScore, nextLesson, TARGET_ACCURACY } from '../progress'
+import { LIVE_DEAD_LESSON } from '../data/lessons'
+import { VOWEL_FORMS } from '../data/vowels'
+import { DRILL_FI } from '../i18n/fi'
+import { ALL_LESSONS, FAMILY_MIX, learnedForms, learnedLetters, lessonMastered, nextLesson, TARGET_ACCURACY } from '../progress'
 import { href } from '../router'
-import { useAppState } from '../storage/store'
+import { useAppState, type AppState, type DrillParam } from '../storage/store'
 
 const COMMON_COUNT = CONSONANTS.filter((c) => c.freq === 'common').length
+const DRILLABLE_FORMS = VOWEL_FORMS.filter((f) => f.drillable).length
+
+function overallScore(stats: AppState['stats']) {
+  let n = 0
+  let ok = 0
+  for (const byItem of Object.values(stats)) {
+    for (const s of Object.values(byItem)) {
+      n += s.n
+      ok += s.ok
+    }
+  }
+  return { n, ok }
+}
 
 export function Home() {
   const done = useAppState((s) => s.lessonsDone)
   const stats = useAppState((s) => s.stats)
-  const learned = learnedLetters(done)
+  const letters = learnedLetters(done)
+  const forms = learnedForms(done)
   const next = nextLesson(done)
-  const lastDone = [...LESSONS].reverse().find((l) => !l.optional && done.includes(l.id))
+  const lastDone = [...ALL_LESSONS].reverse().find((l) => !l.optional && done.includes(l.id))
   const needsPractice = lastDone && !lessonMastered(stats, lastDone)
-  const total = lettersScore(stats, learned)
+  const total = overallScore(stats)
+  const fastRounds: DrillParam[] = [
+    ...(letters.length ? (['mix'] as const) : []),
+    ...(forms.length ? (['vmix'] as const) : []),
+    ...(done.includes(LIVE_DEAD_LESSON.id) ? (['liveDead'] as const) : []),
+  ]
 
   return (
     <div className="page">
@@ -50,39 +72,49 @@ export function Home() {
             <div className="card stack">
               <h2>Harjoittele ensin</h2>
               <p className="muted small">
-                Oppitunnin ”{lastDone.title}” kirjaimet eivät ole vielä vakiintuneet (tavoite {Math.round(TARGET_ACCURACY * 100)} % oikein).
+                Oppitunti ”{lastDone.title}” ei ole vielä vakiintunut (tavoite {Math.round(TARGET_ACCURACY * 100)} % oikein).
               </p>
-              <a className="btn primary block" href={href('harjoitus', { drill: 'mix', mode: 'calm', pool: `lesson:${lastDone.id}` })}>
-                Harjoittele: {lastDone.letters.map((l) => <Letter key={l} char={l} />)}
+              <LessonItems lesson={lastDone} />
+              <a
+                className="btn primary block"
+                href={href('harjoitus', { drill: FAMILY_MIX[lastDone.family], mode: 'calm', pool: lastDone.family === 'syllable' ? 'done' : `lesson:${lastDone.id}` })}
+              >
+                Harjoittele
               </a>
             </div>
           )}
           {next && (
             <div className="card stack">
               <h2>Seuraava oppitunti</h2>
-              <div style={{ fontSize: '2rem', letterSpacing: '0.1em' }}>
-                {next.letters.map((l) => (
-                  <Letter key={l} char={l} />
-                ))}
-              </div>
+              <LessonItems lesson={next} size="2rem" />
               <a className={`btn block ${needsPractice ? '' : 'primary'}`} href={href(`oppitunti/${next.id}`)}>
                 {next.title}
               </a>
             </div>
           )}
-          <div className="card stack">
-            <h2>Pikakierros</h2>
-            <p className="muted small">20 kysymystä kaikista oppimistasi kirjaimista.</p>
-            <a className="btn primary block" href={href('harjoitus', { drill: 'mix', mode: 'fast', pool: 'done' })}>
-              Aloita pikakierros
-            </a>
-          </div>
+          {fastRounds.length > 0 && (
+            <div className="card stack">
+              <h2>Pikakierros</h2>
+              <p className="muted small">20 nopeaa kysymystä siitä, mitä olet jo oppinut.</p>
+              {fastRounds.map((d, i) => (
+                <a key={d} className={`btn block ${i === 0 && !next ? 'primary' : ''}`} href={href('harjoitus', { drill: d, mode: 'fast', pool: 'done' })}>
+                  {d === 'mix' ? 'Konsonantit' : DRILL_FI[d]}
+                </a>
+              ))}
+            </div>
+          )}
           <div className="card row" style={{ justifyContent: 'space-around', textAlign: 'center' }}>
             <div>
               <div className="big-number">
-                {learned.filter((l) => CONSONANTS.find((c) => c.char === l)?.freq === 'common').length}/{COMMON_COUNT}
+                {letters.filter((l) => CONSONANTS.find((c) => c.char === l)?.freq === 'common').length}/{COMMON_COUNT}
               </div>
-              <div className="small muted">yleistä kirjainta</div>
+              <div className="small muted">kirjainta</div>
+            </div>
+            <div>
+              <div className="big-number">
+                {forms.length}/{DRILLABLE_FORMS}
+              </div>
+              <div className="small muted">vokaalimuotoa</div>
             </div>
             <div>
               <div className="big-number">{total.n ? `${Math.round((100 * total.ok) / total.n)} %` : '–'}</div>
@@ -91,11 +123,8 @@ export function Home() {
           </div>
           {!next && (
             <div className="card stack">
-              <h2>Kaikki yleiset kirjaimet käyty 🎉</h2>
-              <p className="muted small">Harvinaiset kirjaimet löytyvät valinnaisista oppitunneista. Seuraavaksi: vokaalit ja sävyt (tulossa).</p>
-              <a className="btn block" href={href('oppitunnit')}>
-                Oppitunnit
-              </a>
+              <h2>Kaikki oppitunnit käyty 🎉</h2>
+              <p className="muted small">Seuraavaksi: sävyjen päättely (vaihe 3, tulossa).</p>
             </div>
           )}
         </>

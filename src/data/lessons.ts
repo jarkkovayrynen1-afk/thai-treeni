@@ -111,3 +111,64 @@ export const FINAL_HINT: Record<string, string> = {
   y: 'i-liuku: ai, ɔɔi, ui',
   w: 'o/u-liuku: ao, ɛɛo, iu',
 }
+
+// ── Phase 2: vowels and live/dead syllables
+
+export interface VowelLesson {
+  id: string
+  title: string
+  /** Vowel form ids (see VOWEL_FORMS). */
+  forms: string[]
+  optional?: boolean
+  intro?: ClassIntro
+}
+
+// Short/long partners are taught together: length changes the tone, so it matters from day one.
+export const VOWEL_LESSONS: VowelLesson[] = [
+  {
+    id: 'v-1',
+    title: 'Vokaalit 1 · a, i',
+    forms: ['a', 'aa', 'i', 'ii'],
+    intro: {
+      heading: 'Vokaalit · สระ',
+      paragraphs: [
+        'Vokaali kirjoitetaan konsonantin ympärille: eteen, taakse, yläpuolelle tai alle. Merkki ◌ näyttää, mihin konsonantti tulee – esimerkiksi ◌า + ม = มา.',
+        'Lähes jokaisella vokaalilla on lyhyt ja pitkä pari. Pituus kuuluu ääntämisessä ja vaikuttaa myöhemmin sävyyn, joten parit opetellaan yhdessä.',
+        'Romanisoinnissa pitkä vokaali kirjoitetaan kahdesti: a on lyhyt, aa pitkä.',
+      ],
+    },
+  },
+  { id: 'v-2', title: 'Vokaalit 2 · u, ʉ', forms: ['u', 'uu', 'ʉ', 'ʉʉ'] },
+  { id: 'v-3', title: 'Vokaalit 3 · e, ɛ', forms: ['e', 'ee', 'ɛ', 'ɛɛ'] },
+  { id: 'v-4', title: 'Vokaalit 4 · o, ɔ', forms: ['o', 'oo', 'ɔ', 'ɔɔ'] },
+  { id: 'v-5', title: 'Vokaalit 5 · ə ja liukuvokaalit', forms: ['ə', 'əə', 'iia', 'ʉʉa', 'uua'] },
+  {
+    id: 'v-6',
+    title: 'Erikoisvokaalit',
+    forms: ['am', 'ai-malai', 'ai-muan', 'ao'],
+    intro: {
+      heading: 'Erikoisvokaalit · สระเกิน',
+      paragraphs: [
+        'Nämä neljä luetaan lyhyiksi, mutta jokainen päättyy konsonantin kaltaiseen ääneen: ◌ำ m-ääneen, ไ◌ ja ใ◌ i-ääneen ja เ◌า o-ääneen.',
+        'Siksi niillä kirjoitettu tavu on aina elävä, vaikka vokaali on lyhyt.',
+      ],
+    },
+  },
+  {
+    id: 'v-7',
+    title: 'Kun perään tulee konsonantti',
+    forms: ['a+', 'e+', 'ɛ+', 'o+', 'ɔɔ+', 'əə+', 'ʉʉ+', 'uua+'],
+    intro: {
+      heading: 'Vokaalin muoto loppukonsonantin kanssa',
+      paragraphs: [
+        'Osa vokaaleista muuttaa muotoaan, kun niiden perään tulee loppukonsonantti. Äänne pysyy samana – vain kirjoitusasu muuttuu.',
+        'Tärkein: ◌ะ muuttuu muotoon ◌ั◌ (จะ → จับ), ja lyhyt o katoaa kokonaan: pelkät kaksi konsonanttia luetaan o:lla (คน kon).',
+      ],
+    },
+  },
+  { id: 'v-rare', title: 'Lyhyet liukuvokaalit', forms: ['ia', 'ʉa', 'ua'], optional: true },
+]
+
+export const VOWEL_LESSON_BY_ID: ReadonlyMap<string, VowelLesson> = new Map(VOWEL_LESSONS.map((l) => [l.id, l]))
+
+export const LIVE_DEAD_LESSON = { id: 'ld-1', title: 'Elävä ja kuollut tavu' } as const

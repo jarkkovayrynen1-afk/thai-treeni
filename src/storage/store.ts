@@ -4,11 +4,13 @@ import { updateStat, type ItemStat } from '../engine/srs'
 // All progress lives in one localStorage entry. Every access is wrapped in try/catch:
 // private mode or blocked storage must never break the app, it just won't remember.
 
-export type DrillId = 'class' | 'initial' | 'final' | 'sound'
+export type DrillId = 'class' | 'initial' | 'final' | 'sound' | 'vowelSound' | 'vowelLength' | 'liveDead'
+/** A drill, or a mix of one family's drills. */
+export type DrillParam = DrillId | 'mix' | 'vmix'
 
 export interface RoundRecord {
   at: number
-  drill: DrillId | 'mix'
+  drill: DrillParam
   mode: 'calm' | 'fast'
   score: number
   total: number
@@ -41,7 +43,7 @@ const MAX_ROUNDS = 200
 export const initialState = (): AppState => ({
   v: 1,
   lessonsDone: [],
-  stats: { class: {}, initial: {}, final: {}, sound: {} },
+  stats: { class: {}, initial: {}, final: {}, sound: {}, vowelSound: {}, vowelLength: {}, liveDead: {} },
   rounds: [],
   settings: { seconds: 5, colorInClassQuestions: false, speakAfterAnswer: true },
   verified: [],

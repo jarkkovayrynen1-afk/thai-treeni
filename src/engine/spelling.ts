@@ -21,6 +21,10 @@ export interface SpellingAnalysis {
   cluster?: string
   /** Final-sound category, or null for an open syllable. */
   coda: FinalSound | null
+  /** The written final consonant (ย/ว glides included), if any. */
+  final?: string
+  /** Vowel written before the consonant (เ แ โ ใ ไ), or ''. */
+  pre: string
   /**
    * Vowel length where the spelling decides it reliably (open syllables and unmarked
    * dead syllables). Undefined elsewhere: spoken length often differs in live syllables.
@@ -79,6 +83,7 @@ export function analyzeSpelling(thai: string): SpellingAnalysis {
   const rest = chars.slice(i).join('')
   const last = chars[chars.length - 1]
   let coda: FinalSound | null
+  let final: string | undefined
   let body = rest // vowel part, without the final consonant
 
   if (pre === 'ใ' || pre === 'ไ') {
@@ -103,6 +108,7 @@ export function analyzeSpelling(thai: string): SpellingAnalysis {
     const f = consonant(last).final
     if (f === null) throw new Error(`${thai}: ${last} cannot be a final consonant`)
     coda = f
+    final = last
     body = rest.slice(0, -1)
   }
 
@@ -115,7 +121,18 @@ export function analyzeSpelling(thai: string): SpellingAnalysis {
 
   const live: Liveness = coda === 'k' || coda === 't' || coda === 'p' || (coda === null && len === 'short') ? 'dead' : 'live'
   const cls = consonant(leader ?? initial).cls
-  return { mark, ...(leader ? { leader } : {}), initial, ...(cluster ? { cluster } : {}), coda, ...(len ? { len } : {}), live, cls }
+  return {
+    mark,
+    ...(leader ? { leader } : {}),
+    initial,
+    ...(cluster ? { cluster } : {}),
+    coda,
+    ...(final ? { final } : {}),
+    pre,
+    ...(len ? { len } : {}),
+    live,
+    cls,
+  }
 }
 
 /** Vowel length of a closed syllable, from the vowel signs between onset and final. */

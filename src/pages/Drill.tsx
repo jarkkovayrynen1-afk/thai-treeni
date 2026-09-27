@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type ReactNode } from 'react'
 import { BackLink, ClassTag, Letter, SpeakButton, ThaiText } from '../components/common'
+import { LengthTag, VowelExamples, VowelFormText } from '../components/VowelCard'
 import { consonant, CONSONANTS, spokenName } from '../data/consonants'
 import { FINAL_HINT, MNEMONIC, SOUND_HINT } from '../data/lessons'
-import type { ConsonantClass } from '../data/types'
-import { drillApplies, isCorrect, letterResults, makeQuestion, questionItem, type Answer, type Question } from '../drills/questions'
-import { CLASS_FI, CLASS_SHAPE, DRILL_FI, FINAL_LABEL, initialLabel } from '../i18n/fi'
-import { DRILLS, resolvePool } from '../progress'
+import type { ConsonantClass, Liveness, VowelLength } from '../data/types'
+import { speakableVowel, VOWEL_BY_ID, vowelForm } from '../data/vowels'
+import { drillApplies, isCorrect, itemResults, makeQuestion, questionItem, wordOf, type Answer, type Question } from '../drills/questions'
+import { liveDeadReason } from '../engine/liveDead'
+import { CLASS_FI, CLASS_SHAPE, DRILL_FI, FINAL_LABEL, initialLabel, LEN_FI, LIVE_FI } from '../i18n/fi'
+import { drillsOf, familyOf, POOL_PREFIX, resolvePool, type Family } from '../progress'
 import { href, navigate } from '../router'
 import { speak, useThaiVoice } from '../speech/speak'
-import { getState, recordAnswer, recordRound, useAppState, type DrillId } from '../storage/store'
+import { getState, recordAnswer, recordRound, useAppState, type DrillId, type DrillParam } from '../storage/store'
 
 const ROUND_LENGTH = 20
 const SOUND_EXTRA_SECONDS = 3
@@ -26,19 +29,36 @@ interface Result {
   hinted: boolean
 }
 
-/** What 🔊 reads: the letter name, or for a sound question a syllable with that sound. */
+/** What 🔊 reads for a question. */
 function speechFor(q: Question): string {
-  return q.kind === 'sound' ? `${q.correct[0]}อ` : spokenName(consonant(q.letter))
+  switch (q.kind) {
+    case 'sound':
+      return `${q.correct[0]}อ`
+    case 'vowelSound':
+    case 'vowelLength':
+      return speakableVowel(vowelForm(q.form).vowel)
+    case 'liveDead':
+      return q.word
+    default:
+      return spokenName(consonant(q.letter))
+  }
 }
 
-/** Listening before answering gives away the letter, except in sound questions. */
+/** Listening before answering gives the answer away, except in sound questions. */
 const listeningIsHint = (q: Question) => q.kind !== 'sound'
 
-export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode: 'calm' | 'fast'; poolSpec: string | null }) {
+const EMPTY_TEXT: Record<Family, string> = {
+  consonant: 'Tähän harjoitukseen ei ole vielä kirjaimia. Käy ensin läpi oppitunti.',
+  vowel: 'Tähän harjoitukseen ei ole vielä vokaaleja. Käy ensin läpi vokaalioppitunti.',
+  syllable: 'Käy ensin läpi oppitunti ”Elävä ja kuollut tavu”.',
+}
+
+export function Drill({ drill, mode, poolSpec }: { drill: DrillParam; mode: 'calm' | 'fast'; poolSpec: string | null }) {
   const settings = useAppState((s) => s.settings)
+  const family = familyOf(drill)
   // The pool is fixed for the round, even if a lesson gets marked done meanwhile.
-  const pool = useMemo(() => resolvePool(poolSpec, getState().lessonsDone), [poolSpec])
-  const drills = useMemo(() => (drill === 'mix' ? DRILLS : [drill]).filter((d) => drillApplies(d, pool)), [drill, pool])
+  const pool = useMemo(() => resolvePool(poolSpec, getState().lessonsDone, family), [poolSpec, family])
+  const drills = useMemo(() => drillsOf(drill).filter((d) => drillApplies(d, pool)), [drill, pool])
 
   const [round, setRound] = useState(0)
   const [results, setResults] = useState<Result[]>([])
@@ -85,10 +105,10 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
     if (!q || phase !== 'asking') return
     clearTimers()
     const right = a !== null && isCorrect(q, a)
-    // A hinted answer still teaches, but the letter is treated as not known yet.
+    // A hinted answer still teaches, but the item is treated as not known yet.
     const correct = right && !hinted
     const drillId: DrillId = q.kind
-    for (const [letter, ok] of letterResults(q, a)) recordAnswer(drillId, letter, ok && !hinted)
+    for (const [item, ok] of itemResults(q, a)) recordAnswer(drillId, item, ok && !hinted)
     const all = [...results, { q, answer: a, correct, hinted }]
     setResults(all)
     setAnswer(a)
@@ -119,7 +139,7 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
           <h1>{DRILL_FI[drill]}</h1>
         </div>
         <div className="card stack">
-          <p>Tähän harjoitukseen ei ole vielä kirjaimia. Käy ensin läpi oppitunti.</p>
+          <p>{EMPTY_TEXT[family]}</p>
           <a className="btn primary" href={href('oppitunnit')}>
             Oppitunnit
           </a>
@@ -133,13 +153,14 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
       <Summary
         results={results}
         drill={drill}
+        family={family}
         mode={mode}
         onAgain={() => {
           setResults([])
           recent.current = []
           setRound((r) => r + 1)
         }}
-        onMissed={(letters) => navigate('harjoitus', { drill, mode: 'calm', pool: `letters:${letters.join(',')}` })}
+        onMissed={(items) => navigate('harjoitus', { drill, mode: 'calm', pool: `${POOL_PREFIX[family]}:${items.join(',')}` })}
       />
     )
   }
@@ -147,9 +168,6 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
   if (!q) return null
   const correct = answer !== null && isCorrect(q, answer)
   const hintable = phase === 'asking' && listeningIsHint(q)
-  const listen = (
-    <SpeakButton text={speechFor(q)} showLabel label={hintable ? 'Kuuntele (vihje)' : 'Kuuntele'} onSpeak={() => hintable && setHinted(true)} />
-  )
   const showClass = phase === 'feedback' || settings.colorInClassQuestions
 
   return (
@@ -170,19 +188,9 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
       )}
 
       <div className={`prompt ${phase === 'feedback' ? (correct ? 'flash-ok' : 'flash-bad') : ''}`}>
-        {q.kind === 'sound' ? (
-          <>
-            <div className="sound">{initialLabel(q.sound)}</div>
-            <div className="ask">Mitkä kirjaimet alkavat tällä äänteellä? Valitse kaikki.</div>
-            {listen}
-          </>
-        ) : (
-          <>
-            <Letter char={q.letter} className="big" hideClass={q.kind === 'class' && !showClass} />
-            <div className="ask">{ASK[q.kind]}</div>
-            {listen}
-          </>
-        )}
+        <PromptItem q={q} hideClass={q.kind === 'class' && !showClass} />
+        <div className="ask">{ASK[q.kind]}</div>
+        <SpeakButton text={speechFor(q)} showLabel label={hintable ? 'Kuuntele (vihje)' : 'Kuuntele'} onSpeak={() => hintable && setHinted(true)} />
       </div>
 
       <Answers q={q} phase={phase} answer={answer} picked={picked} setPicked={setPicked} submit={submit} />
@@ -190,7 +198,7 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
       {phase === 'feedback' && (
         <div className={`feedback ${correct ? 'ok' : 'bad'}`} role="status">
           {correct ? '✓ Oikein' : answer === null ? '⏱ Aika loppui' : '✗ Väärin'}
-          {correct && hinted && ' – vihjeen avulla, joten kirjain tulee pian uudestaan'}
+          {correct && hinted && ' – vihjeen avulla, joten tämä tulee pian uudestaan'}
           <div className="explain">
             <Explanation q={q} />
           </div>
@@ -211,13 +219,34 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
   )
 }
 
-const ASK: Record<Exclude<Question['kind'], 'sound'>, string> = {
+const ASK: Record<Question['kind'], string> = {
   class: 'Mihin luokkaan kirjain kuuluu?',
   initial: 'Miltä kirjain kuulostaa tavun alussa?',
   final: 'Miltä kirjain kuulostaa tavun lopussa?',
+  sound: 'Mitkä kirjaimet alkavat tällä äänteellä? Valitse kaikki.',
+  vowelSound: 'Miltä vokaali kuulostaa?',
+  vowelLength: 'Onko vokaali lyhyt vai pitkä?',
+  liveDead: 'Onko tavu elävä vai kuollut?',
+}
+
+function PromptItem({ q, hideClass }: { q: Question; hideClass: boolean }) {
+  switch (q.kind) {
+    case 'sound':
+      return <div className="sound">{initialLabel(q.sound)}</div>
+    case 'vowelSound':
+    case 'vowelLength':
+      return <VowelFormText id={q.form} className="big" />
+    case 'liveDead':
+      return <ThaiText text={q.word} className="word-big" />
+    default:
+      return <Letter char={q.letter} className="big" hideClass={hideClass} />
+  }
 }
 
 const CLASS_BUTTONS: ConsonantClass[] = ['high', 'mid', 'low']
+const LENGTH_BUTTONS: VowelLength[] = ['short', 'long']
+const LIVE_BUTTONS: Liveness[] = ['live', 'dead']
+const capitalize = (s: string) => s[0].toUpperCase() + s.slice(1)
 
 function Answers({
   q,
@@ -242,6 +271,20 @@ function Answers({
   }
   const mark = (value: string, isRight: boolean) =>
     locked && (isRight || value === answer) ? <span className="mark">{isRight ? '✓' : '✗'}</span> : null
+  /** A row of plain answer buttons. */
+  const buttons = (values: readonly string[], label: (v: string) => ReactNode, layout: string, extra = '') => (
+    <div className={`answers ${layout}`}>
+      {values.map((v) => {
+        const isRight = isCorrect(q, v)
+        return (
+          <button key={v || 'silent'} type="button" className={`answer ${extra} ${state(v, isRight)}`} disabled={locked} onClick={() => submit(v)}>
+            {label(v)}
+            {mark(v, isRight)}
+          </button>
+        )
+      })}
+    </div>
+  )
 
   switch (q.kind) {
     case 'class': {
@@ -250,39 +293,25 @@ function Answers({
         <div className="answers">
           {CLASS_BUTTONS.map((c) => (
             <button key={c} type="button" className={`answer class-btn ${c} ${state(c, c === right)}`} disabled={locked} onClick={() => submit(c)}>
-              {CLASS_SHAPE[c]} {CLASS_FI[c][0].toUpperCase() + CLASS_FI[c].slice(1)}
+              {CLASS_SHAPE[c]} {capitalize(CLASS_FI[c])}
               {mark(c, c === right)}
             </button>
           ))}
         </div>
       )
     }
-    case 'initial': {
-      const right = consonant(q.letter).initial
+    case 'initial':
+      return buttons(q.options, initialLabel, 'two')
+    case 'final':
       return (
-        <div className="answers two">
-          {q.options.map((s) => (
-            <button key={s || 'silent'} type="button" className={`answer ${state(s, s === right)}`} disabled={locked} onClick={() => submit(s)}>
-              {initialLabel(s)}
-              {mark(s, s === right)}
-            </button>
-          ))}
-        </div>
+        buttons(q.options, (f) => FINAL_LABEL[f as keyof typeof FINAL_LABEL], 'four', 'compact')
       )
-    }
-    case 'final': {
-      const right = consonant(q.letter).final
-      return (
-        <div className="answers four">
-          {q.options.map((f) => (
-            <button key={f} type="button" className={`answer ${state(f, f === right)}`} style={{ fontSize: '1.05rem' }} disabled={locked} onClick={() => submit(f)}>
-              {FINAL_LABEL[f]}
-              {mark(f, f === right)}
-            </button>
-          ))}
-        </div>
-      )
-    }
+    case 'vowelSound':
+      return buttons(q.options, (s) => <span className="rom">{s}</span>, 'two')
+    case 'vowelLength':
+      return buttons(LENGTH_BUTTONS, (l) => capitalize(LEN_FI[l as VowelLength]), 'two')
+    case 'liveDead':
+      return buttons(LIVE_BUTTONS, (l) => capitalize(LIVE_FI[l as Liveness]), 'two')
     case 'sound': {
       const chosen = (answer as string[] | null) ?? []
       return (
@@ -328,15 +357,21 @@ function Answers({
 }
 
 function Explanation({ q }: { q: Question }) {
-  if (q.kind === 'sound') {
-    return (
-      <span>
-        <b>{initialLabel(q.sound)}</b> ({SOUND_HINT[q.sound]}):{' '}
-        {q.correct.map((l) => (
-          <Letter key={l} char={l} className="" />
-        ))}
-      </span>
-    )
+  switch (q.kind) {
+    case 'sound':
+      return (
+        <span>
+          <b>{initialLabel(q.sound)}</b> ({SOUND_HINT[q.sound]}):{' '}
+          {q.correct.map((l) => (
+            <Letter key={l} char={l} />
+          ))}
+        </span>
+      )
+    case 'vowelSound':
+    case 'vowelLength':
+      return <VowelExplanation form={q.form} />
+    case 'liveDead':
+      return <LiveDeadExplanation thai={q.word} />
   }
   const c = consonant(q.letter)
   const name = <ThaiText text={`${c.char} ${c.name}`} />
@@ -365,6 +400,72 @@ function Explanation({ q }: { q: Question }) {
   }
 }
 
+function VowelExplanation({ form }: { form: string }) {
+  const f = vowelForm(form)
+  const partner = f.vowel.pair ? VOWEL_BY_ID.get(f.vowel.pair) : undefined
+  return (
+    <span className="stack" style={{ gap: 6 }}>
+      <span>
+        <VowelFormText id={form} /> = <b className="rom">{f.vowel.rom}</b> · <LengthTag form={f} />
+        {partner && (
+          <span className="small">
+            {' '}
+            · pari <VowelFormText id={partner.id} /> <span className="rom">{partner.rom}</span>
+          </span>
+        )}
+      </span>
+      <VowelExamples form={f} limit={2} />
+    </span>
+  )
+}
+
+/** Why a syllable is live or dead — the one-line version of the lesson. */
+export function LiveDeadExplanation({ thai }: { thai: string }) {
+  const w = wordOf(thai)
+  const r = liveDeadReason(w)
+  const verdict = <b>{LIVE_FI[r.live]}</b>
+  let why: ReactNode
+  switch (r.kind) {
+    case 'stop':
+      why = (
+        <>
+          Loppukonsonantti <Letter char={r.final} /> ääntyy <b>{FINAL_LABEL[r.coda]}</b> – katkeava loppu →{' '}
+        </>
+      )
+      break
+    case 'sonorant':
+    case 'glide':
+      why = (
+        <>
+          Loppukonsonantti <Letter char={r.final} /> ääntyy <b>{FINAL_LABEL[r.coda]}</b> – soiva loppu →{' '}
+        </>
+      )
+      break
+    case 'special':
+      why = (
+        <>
+          <VowelFormText id={r.vowel === 'ai' ? (thai.startsWith('ใ') ? 'ai-muan' : 'ai-malai') : r.vowel} /> päättyy{' '}
+          {r.vowel === 'am' ? 'm' : r.vowel === 'ai' ? 'i' : 'o'}-ääneen →{' '}
+        </>
+      )
+      break
+    case 'open':
+      why = <>Ei loppukonsonanttia ja vokaali on {LEN_FI[r.len]} → </>
+  }
+  return (
+    <span className="stack" style={{ gap: 4 }}>
+      <span>
+        <ThaiText text={thai} /> {w.rom} · {w.fi}
+      </span>
+      <span>
+        {why}
+        {verdict}
+      </span>
+      {w.mark && <span className="small muted">Sävymerkki ei vaikuta siihen, onko tavu elävä vai kuollut.</span>}
+    </span>
+  )
+}
+
 /** Why a letter has its class: the mnemonic, or its high-class twin. */
 export function ClassReason({ char }: { char: string }) {
   const c = consonant(char)
@@ -388,21 +489,36 @@ export function ClassReason({ char }: { char: string }) {
   )
 }
 
+/** One item in a summary list, drawn the way its family is drawn everywhere else. */
+function ItemView({ item, family }: { item: string; family: Family }) {
+  if (family === 'consonant') return <Letter char={item} />
+  if (family === 'vowel') return <VowelFormText id={item} />
+  return <ThaiText text={item} />
+}
+
 function Summary({
   results,
   drill,
+  family,
   mode,
   onAgain,
   onMissed,
 }: {
   results: Result[]
-  drill: DrillId | 'mix'
+  drill: DrillParam
+  family: Family
   mode: 'calm' | 'fast'
   onAgain: () => void
-  onMissed: (letters: string[]) => void
+  onMissed: (items: string[]) => void
 }) {
   const score = results.filter((r) => r.correct).length
-  const missedLetters = [...new Set(results.filter((r) => !r.correct).flatMap((r) => letterResults(r.q, r.answer).filter(([, ok]) => !ok).map(([l]) => l)))]
+  const missed = [
+    ...new Set(
+      results
+        .filter((r) => !r.correct)
+        .flatMap((r) => (r.hinted ? [questionItem(r.q)] : itemResults(r.q, r.answer).filter(([, ok]) => !ok).map(([item]) => item))),
+    ),
+  ]
   return (
     <div className="page drill">
       <div className="topbar">
@@ -417,15 +533,15 @@ function Summary({
           {DRILL_FI[drill]} · {mode === 'fast' ? 'pikakierros' : 'rauhallinen'}
         </div>
       </div>
-      {missedLetters.length > 0 ? (
+      {missed.length > 0 ? (
         <div className="card stack">
           <h2>Harjoiteltavaa</h2>
-          <div style={{ fontSize: '2.4rem', letterSpacing: '0.1em' }}>
-            {missedLetters.map((l) => (
-              <Letter key={l} char={l} />
+          <div className="row" style={{ flexWrap: 'wrap', gap: '4px 14px', fontSize: family === 'consonant' ? '2.4rem' : '1.8rem' }}>
+            {missed.map((item) => (
+              <ItemView key={item} item={item} family={family} />
             ))}
           </div>
-          <button type="button" className="btn block" onClick={() => onMissed(missedLetters)}>
+          <button type="button" className="btn block" onClick={() => onMissed(missed)}>
             Harjoittele vain näitä
           </button>
         </div>

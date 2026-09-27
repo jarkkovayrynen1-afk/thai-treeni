@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { consonant, CONSONANTS } from '../src/data/consonants'
 import { LESSONS } from '../src/data/lessons'
-import { isCorrect, letterResults, makeQuestion, type Stats } from '../src/drills/questions'
+import { isCorrect, itemResults, makeQuestion, type Stats } from '../src/drills/questions'
 import { pickWeighted, updateStat, weight } from '../src/engine/srs'
 import { resolvePool } from '../src/progress'
 import { hydrate, initialState } from '../src/storage/store'
@@ -100,7 +100,7 @@ describe('questions', () => {
 
   it('score a sound answer per letter', () => {
     const q = { kind: 'sound' as const, sound: 'k', options: ['ข', 'ค', 'ก', 'ต'], correct: ['ข', 'ค'] }
-    expect(letterResults(q, ['ข', 'ก'])).toEqual([
+    expect(itemResults(q, ['ข', 'ก'])).toEqual([
       ['ข', true],
       ['ค', false],
       ['ก', false],
@@ -108,7 +108,7 @@ describe('questions', () => {
   })
 
   it('work with a beginner pool of one lesson', () => {
-    const small = resolvePool('lesson:mid-1', [])
+    const small = resolvePool('lesson:mid-1', [], 'consonant')
     expect(small).toEqual(['ก', 'จ', 'ด', 'ต'])
     for (const drill of ['class', 'initial', 'final', 'sound'] as const) {
       for (let i = 0; i < 50; i++) makeQuestion(drill, { pool: small, stats: emptyStats(), recent: ['ก', 'จ'], rng })
