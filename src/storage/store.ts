@@ -19,6 +19,8 @@ export interface Settings {
   seconds: number
   /** Show the class color even when the question asks for the class. */
   colorInClassQuestions: boolean
+  /** Calm mode: read the letter aloud after each answer (needs a Thai voice). */
+  speakAfterAnswer: boolean
 }
 
 export interface AppState {
@@ -41,7 +43,7 @@ export const initialState = (): AppState => ({
   lessonsDone: [],
   stats: { class: {}, initial: {}, final: {}, sound: {} },
   rounds: [],
-  settings: { seconds: 5, colorInClassQuestions: false },
+  settings: { seconds: 5, colorInClassQuestions: false, speakAfterAnswer: true },
   verified: [],
   tableOpens: [],
 })

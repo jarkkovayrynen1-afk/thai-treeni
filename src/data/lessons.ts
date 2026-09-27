@@ -37,6 +37,8 @@ export const MNEMONIC = {
 export interface ClassIntro {
   heading: string
   paragraphs: string[]
+  /** Closing line followed by the class's coloured tag. */
+  classLine?: string
 }
 
 /** Shown before the first lesson of each group. */
@@ -46,24 +48,24 @@ export const INTROS: Record<string, ClassIntro> = {
     paragraphs: [
       'Thain 44 konsonanttia jakautuvat kolmeen luokkaan. Luokka ratkaisee yhdessä sävymerkin ja tavun tyypin kanssa, millä sävyllä tavu lausutaan.',
       'Keskiluokassa on vain 9 kirjainta, joten se opetellaan ensin. Muistisäännön jokainen sana alkaa keskiluokan kirjaimella.',
-      'Keskiluokka näkyy sovelluksessa aina tällä värillä ja merkillä ●.',
     ],
+    classLine: 'Keskiluokka näkyy sovelluksessa aina tällä värillä ja merkillä:',
   },
   'high-1': {
     heading: 'Korkea luokka · อักษรสูง',
     paragraphs: [
       'Korkeassa luokassa on 11 kirjainta. Muistisäännön sanat alkavat niistä seitsemällä: ผ ฝ ถ ข ส ห ฉ.',
       'Loput neljä ovat saman äänteen kaksoiskappaleita: ศ ษ (kuin ส), ฐ (kuin ถ) ja vanhentunut ฃ (kuin ข).',
-      'Korkea luokka näkyy aina tällä värillä ja merkillä ▲.',
     ],
+    classLine: 'Korkea luokka näkyy aina tällä värillä ja merkillä:',
   },
   'lowp-1': {
     heading: 'Matala luokka · อักษรต่ำ',
     paragraphs: [
       'Kaikki loput 24 kirjainta ovat matalaa luokkaa. Tälle luokalle ei tarvita muistisääntöä: jos kirjain ei ole keski- eikä korkeaa luokkaa, se on matala.',
       'Parilliset (อักษรคู่, 14 kpl) ovat korkean luokan kaksosia: sama äänne, eri luokka. ข ↔ ค, ถ ↔ ท, ผ ↔ พ, ฝ ↔ ฟ, ส ↔ ซ, ห ↔ ฮ, ฉ ↔ ช.',
-      'Matala luokka näkyy aina tällä värillä ja merkillä ▼.',
     ],
+    classLine: 'Matala luokka näkyy aina tällä värillä ja merkillä:',
   },
   'lows-1': {
     heading: 'Matala luokka: yksinäiset · อักษรเดี่ยว',

@@ -49,6 +49,11 @@ export function LessonPage({ id }: { id: string }) {
           {intro.paragraphs.map((p) => (
             <p key={p}>{p}</p>
           ))}
+          {intro.classLine && (
+            <p>
+              {intro.classLine} <ClassTag cls={lesson.cls} />
+            </p>
+          )}
           {mnemonic && (
             <div className="mnemonic" style={{ borderColor: `var(--${lesson.cls})` }}>
               <ThaiText text={mnemonic.thai} className="mn-thai" />

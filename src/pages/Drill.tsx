@@ -1,24 +1,38 @@
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
-import { BackLink, ClassTag, Letter, ThaiText } from '../components/common'
-import { consonant, CONSONANTS } from '../data/consonants'
+import { BackLink, ClassTag, Letter, SpeakButton, ThaiText } from '../components/common'
+import { consonant, CONSONANTS, spokenName } from '../data/consonants'
 import { FINAL_HINT, MNEMONIC, SOUND_HINT } from '../data/lessons'
 import type { ConsonantClass } from '../data/types'
 import { drillApplies, isCorrect, letterResults, makeQuestion, questionItem, type Answer, type Question } from '../drills/questions'
 import { CLASS_FI, CLASS_SHAPE, DRILL_FI, FINAL_LABEL, initialLabel } from '../i18n/fi'
 import { DRILLS, resolvePool } from '../progress'
 import { href, navigate } from '../router'
+import { speak, useThaiVoice } from '../speech/speak'
 import { getState, recordAnswer, recordRound, useAppState, type DrillId } from '../storage/store'
 
 const ROUND_LENGTH = 20
 const SOUND_EXTRA_SECONDS = 3
+/** Fast mode: how long the answer stays on screen before the next question. */
+const FAST_SHOW_RIGHT_MS = 900
+const FAST_SHOW_WRONG_MS = 2200
 
 type Phase = 'asking' | 'feedback' | 'summary'
 
 interface Result {
   q: Question
   answer: Answer | null
+  /** Right AND without listening first — only these count. */
   correct: boolean
+  hinted: boolean
 }
+
+/** What 🔊 reads: the letter name, or for a sound question a syllable with that sound. */
+function speechFor(q: Question): string {
+  return q.kind === 'sound' ? `${q.correct[0]}อ` : spokenName(consonant(q.letter))
+}
+
+/** Listening before answering gives away the letter, except in sound questions. */
+const listeningIsHint = (q: Question) => q.kind !== 'sound'
 
 export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode: 'calm' | 'fast'; poolSpec: string | null }) {
   const settings = useAppState((s) => s.settings)
@@ -32,6 +46,8 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
   const [phase, setPhase] = useState<Phase>('asking')
   const [answer, setAnswer] = useState<Answer | null>(null)
   const [picked, setPicked] = useState<string[]>([])
+  const [hinted, setHinted] = useState(false)
+  const voice = useThaiVoice()
   const recent = useRef<string[]>([])
   const timers = useRef<number[]>([])
 
@@ -50,6 +66,7 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
     setQ(question)
     setAnswer(null)
     setPicked([])
+    setHinted(false)
     setPhase('asking')
   }, [drills, pool])
 
@@ -67,17 +84,21 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
   const submit = (a: Answer | null) => {
     if (!q || phase !== 'asking') return
     clearTimers()
-    const correct = a !== null && isCorrect(q, a)
+    const right = a !== null && isCorrect(q, a)
+    // A hinted answer still teaches, but the letter is treated as not known yet.
+    const correct = right && !hinted
     const drillId: DrillId = q.kind
-    for (const [letter, ok] of letterResults(q, a)) recordAnswer(drillId, letter, ok)
-    const all = [...results, { q, answer: a, correct }]
+    for (const [letter, ok] of letterResults(q, a)) recordAnswer(drillId, letter, ok && !hinted)
+    const all = [...results, { q, answer: a, correct, hinted }]
     setResults(all)
     setAnswer(a)
     setPhase('feedback')
-    const last = all.length >= ROUND_LENGTH
-    const advance = () => (last ? finish(all) : nextQuestion())
-    if (mode === 'fast') later(advance, correct ? 450 : 1500)
-    else if (correct) later(advance, 800)
+    if (mode === 'fast') {
+      const last = all.length >= ROUND_LENGTH
+      later(() => (last ? finish(all) : nextQuestion()), right ? FAST_SHOW_RIGHT_MS : FAST_SHOW_WRONG_MS)
+    } else if (voice && settings.speakAfterAnswer) {
+      speak(speechFor(q), voice)
+    }
   }
 
   // Fast mode countdown: one timer per question. The effect event always sees the
@@ -125,6 +146,10 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
 
   if (!q) return null
   const correct = answer !== null && isCorrect(q, answer)
+  const hintable = phase === 'asking' && listeningIsHint(q)
+  const listen = (
+    <SpeakButton text={speechFor(q)} showLabel label={hintable ? 'Kuuntele (vihje)' : 'Kuuntele'} onSpeak={() => hintable && setHinted(true)} />
+  )
   const showClass = phase === 'feedback' || settings.colorInClassQuestions
 
   return (
@@ -149,11 +174,13 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
           <>
             <div className="sound">{initialLabel(q.sound)}</div>
             <div className="ask">Mitkä kirjaimet alkavat tällä äänteellä? Valitse kaikki.</div>
+            {listen}
           </>
         ) : (
           <>
             <Letter char={q.letter} className="big" hideClass={q.kind === 'class' && !showClass} />
             <div className="ask">{ASK[q.kind]}</div>
+            {listen}
           </>
         )}
       </div>
@@ -163,13 +190,14 @@ export function Drill({ drill, mode, poolSpec }: { drill: DrillId | 'mix'; mode:
       {phase === 'feedback' && (
         <div className={`feedback ${correct ? 'ok' : 'bad'}`} role="status">
           {correct ? '✓ Oikein' : answer === null ? '⏱ Aika loppui' : '✗ Väärin'}
+          {correct && hinted && ' – vihjeen avulla, joten kirjain tulee pian uudestaan'}
           <div className="explain">
             <Explanation q={q} />
           </div>
         </div>
       )}
 
-      {phase === 'feedback' && mode === 'calm' && !correct && (
+      {phase === 'feedback' && mode === 'calm' && (
         <button
           type="button"
           className="btn primary block"

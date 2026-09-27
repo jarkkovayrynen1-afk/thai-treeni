@@ -52,11 +52,30 @@ export function ClassTag({ cls, letter }: { cls: ConsonantClass; letter?: string
   )
 }
 
-export function SpeakButton({ text, label = 'Kuuntele' }: { text: string; label?: string }) {
+/** Hidden when the device has no Thai voice. `showLabel` renders a wider button with text. */
+export function SpeakButton({
+  text,
+  label = 'Kuuntele',
+  showLabel = false,
+  onSpeak,
+}: {
+  text: string
+  label?: string
+  showLabel?: boolean
+  onSpeak?: () => void
+}) {
   const voice = useThaiVoice()
   if (!voice) return null
-  return (
-    <button type="button" className="icon-btn" aria-label={label} title={label} onClick={() => speak(text, voice)}>
+  const click = () => {
+    speak(text, voice)
+    onSpeak?.()
+  }
+  return showLabel ? (
+    <button type="button" className="btn ghost" onClick={click}>
+      🔊 {label}
+    </button>
+  ) : (
+    <button type="button" className="icon-btn" aria-label={label} title={label} onClick={click}>
       🔊
     </button>
   )

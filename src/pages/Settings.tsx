@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { BackLink } from '../components/common'
+import { useThaiVoice } from '../speech/speak'
 import { exportJson, importJson, resetProgress, updateSettings, useAppState } from '../storage/store'
 
 const SECONDS = [3, 5, 8]
 
 export function Settings() {
   const settings = useAppState((s) => s.settings)
+  const voice = useThaiVoice()
   const [backup, setBackup] = useState('')
   const [message, setMessage] = useState('')
 
@@ -46,6 +48,28 @@ export function Settings() {
           </span>
           <input type="checkbox" checked={settings.colorInClassQuestions} onChange={(e) => updateSettings({ colorInClassQuestions: e.target.checked })} />
         </label>
+      </section>
+
+      <section className="card stack">
+        <h2>Ääntäminen</h2>
+        {voice ? (
+          <>
+            <p className="small muted">Thai-ääni löytyi ({voice.name}). 🔊-painike näkyy oppitunneilla ja harjoituksissa.</p>
+            <label className="switch">
+              <span>
+                <b>Lausu kirjain vastauksen jälkeen</b>
+                <br />
+                <span className="small muted">Rauhallisessa tilassa. Jos kuuntelet ennen vastaamista, se lasketaan vihjeeksi.</span>
+              </span>
+              <input type="checkbox" checked={settings.speakAfterAnswer} onChange={(e) => updateSettings({ speakAfterAnswer: e.target.checked })} />
+            </label>
+          </>
+        ) : (
+          <p className="small">
+            Tästä laitteesta ei löytynyt thain puheääntä, joten 🔊-painikkeet on piilotettu. Androidilla: <b>Asetukset → Järjestelmä → Kielet → Tekstistä puheeksi</b>
+            {' → '}Google-moottorin asetukset → Asenna äänidata → <b>thai</b>. Sulje ja avaa sovellus sen jälkeen uudelleen.
+          </p>
+        )}
       </section>
 
       <section className="card stack">
